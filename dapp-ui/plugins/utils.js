@@ -4,7 +4,7 @@ const Web3 = require('web3')
 let metamaskWeb3 = new Web3('http://localhost:8545')
 let account = null
 let airbnbContract
-let airbnbContractAddress = '' // Paste Contract address here
+let airbnbContractAddress = '0xd9145CCE52D386f254917e481eB44e9943F39138' // Paste Contract address here
 
 export function web3() {
   return metamaskWeb3
@@ -15,31 +15,60 @@ export const accountAddress = () => {
 }
 
 export async function setProvider() {
-  // TODO: get injected Metamask Object and create Web3 instance
+  // get injected Metamask Object and create Web3 instance
+  if (window.ethereum) {
+    metamaskWeb3 = new Web3(ethereum);
+
+    try {
+      // Request account access if needed
+      await ethereum.enable();
+    } catch (error) {
+      // user denied acct access
+    }
+  } else if (window.web3) {
+    metamaskWeb3 = new Web3(web3.currentProvider);
+  }
+  account = await metamaskWeb3.eth.getAccounts();
 
 }
 
 
 function getAirbnbContract() {
-  // TODO: create and return contract Object
-
+  // create and return contract Object
+  airbnbContract = airbnbContract || new metamaskWeb3.eth.Contract(AirbnbABI.abi, airbnbContractAddress)
+  return airbnbContract
 }
 
 
 export async function postProperty(name, description, price) {
-  // TODO: call Airbnb.rentOutproperty
+  // call Airbnb.rentOutproperty
+  const prop = await getAirbnbContract().methods.rentOutProperty(name, description, price).send(
+    {from: account[0]}
+  )
 
   alert('Property Posted Successfully')
 }
 
 export async function bookProperty(spaceId, checkInDate, checkOutDate, totalPrice) {
-  // TODO: call Airbnb.rentSpace
+  // call Airbnb.rentSpace
+  const prop = await getAirbnbContract().methods.rentProperty(spaceId, checkInDate, checkOutDate).send(
+    {from: account[0], value: totalPrice}
+  )
   
   alert('Property Booked Successfully')
 }
 
 export async function fetchAllProperties() {
-  // TODO: call Airbnb.propertyId
+  // call Airbnb.propertyId
+  const propertyId = await getAirbnbContract().methods.propertyId().call();
+  const properties = []
   // iterate till property Id
-  // push each object to properties array
+  for (let i = 0; i < propertyId; i++) {
+    const p = await airbnbContract.methods.properties(i).call();
+    // push each object to properties array
+    properties.push(
+      {id: i, name: p.name, description: p.description, price: metamaskWeb3.utils.fromWei(p.price)}
+    )
+  }
+  return properties;
 }

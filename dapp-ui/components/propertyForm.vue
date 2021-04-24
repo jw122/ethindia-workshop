@@ -61,8 +61,10 @@ export default {
   methods: {
     postAd() {
       // convert price from ETH to Wei
-
+      const weiValue = web3().utils.toWei(this.price, 'ether');
       // call metamask.postProperty
+      // this postProperty is defined inside utils.js
+      postProperty(this.title, this.description, weiValue);
       
     }
   }
